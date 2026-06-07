@@ -19,7 +19,6 @@ from gomoku_weights import (
 def evaluate(
     board: List[List[int]],
     player: int,
-    use_position_weight: bool = True,
     use_pattern_weights: bool = True,
 ) -> int:
     """Evaluate the given 15x15 `board` for `player`.
@@ -27,13 +26,14 @@ def evaluate(
     Args:
         board: 15x15 matrix with values EMPTY/BLACK/WHITE.
         player: BLACK or WHITE - the side for which the score is positive.
-        use_position_weight: if True, use pattern-based position weights (board_position_score);
-            if False, fall back to simple stone-count difference.
-        use_pattern_weights: when using position weights, pass this to board_position_score to
-            toggle pattern-weighted evaluation vs simple count.
+        use_pattern_weights: if True, use pattern-based position weights;
+            if False, use simple empty-point count difference.
 
     Returns:
         Signed integer score: positive means `player` advantage; negative means opponent advantage.
+        
+    Note:
+        Assumes both players have equal or nearly equal stone counts (differ by at most 1).
     """
     validate_board(board)
     if player not in (BLACK, WHITE):
@@ -41,15 +41,11 @@ def evaluate(
 
     opponent = WHITE if player == BLACK else BLACK
 
-    if use_position_weight:
-        self_score = board_position_score(board, player, use_pattern_weights=use_pattern_weights)
-        opp_score = board_position_score(board, opponent, use_pattern_weights=use_pattern_weights)
-        return int(self_score - opp_score)
-
-    # fallback: stone-count difference
-    player_count = sum(1 for r in board for c in r if c == player)
-    opp_count = sum(1 for r in board for c in r if c == opponent)
-    return player_count - opp_count
+    # Position weight evaluation
+    player_score = board_position_score(board, player, use_pattern_weights=use_pattern_weights)
+    opponent_score = board_position_score(board, opponent, use_pattern_weights=use_pattern_weights)
+    
+    return int(player_score - opponent_score)
 
 
 # convenience alias used by search routines at leaf nodes
@@ -70,7 +66,7 @@ if __name__ == "__main__":
         (WHITE, 6, 7),
     ])
 
-    print("evaluate (position weights) for BLACK:", evaluate(board, BLACK, use_position_weight=True))
-    print("evaluate (position weights) for WHITE:", evaluate(board, WHITE, use_position_weight=True))
-    print("evaluate (count only) for BLACK:", evaluate(board, BLACK, use_position_weight=False))
-    print("evaluate (count only) for WHITE:", evaluate(board, WHITE, use_position_weight=False))
+    print("evaluate (pattern weights) for BLACK:", evaluate(board, BLACK, use_pattern_weights=True))
+    print("evaluate (pattern weights) for WHITE:", evaluate(board, WHITE, use_pattern_weights=True))
+    print("evaluate (empty count only) for BLACK:", evaluate(board, BLACK, use_pattern_weights=False))
+    print("evaluate (empty count only) for WHITE:", evaluate(board, WHITE, use_pattern_weights=False))
